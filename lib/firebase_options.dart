@@ -69,6 +69,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '139212990091',
     projectId: 'stocktrend-e51d2',
     storageBucket: 'stocktrend-e51d2.firebasestorage.app',
+    iosClientId: '139212990091-t6odmp16r6l3sg6ifgs04i3j0iks405t.apps.googleusercontent.com',
     iosBundleId: 'com.example.assestTracking',
   );
+
 }

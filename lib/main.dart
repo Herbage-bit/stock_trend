@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart'; // 若有透過 flutterfire 產生此檔，請取消註解
 import '../state/asset_state.dart';
 import '../pages/home_page.dart';
+import '../pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +32,7 @@ class AssetTrackerApp extends StatefulWidget {
 }
 
 class _AssetTrackerAppState extends State<AssetTrackerApp> {
-  final AssetState _assetState = AssetState();
+  AssetState? _assetState;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +48,23 @@ class _AssetTrackerAppState extends State<AssetTrackerApp> {
         textTheme: GoogleFonts.notoSansTcTextTheme(),
         useMaterial3: true,
       ),
-      home: HomePage(assetState: _assetState),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            _assetState ??= AssetState();
+            return HomePage(assetState: _assetState!);
+          }
+          
+          _assetState = null;
+          return const LoginPage();
+        },
+      ),
     );
   }
 }

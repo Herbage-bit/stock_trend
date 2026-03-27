@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../state/asset_state.dart';
 import '../models/asset_record.dart';
 import 'dashboard_page.dart';
@@ -29,7 +30,16 @@ class HomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 20),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B)),
+                    tooltip: '登出',
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                    },
+                  ),
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
