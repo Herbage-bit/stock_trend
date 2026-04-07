@@ -1,0 +1,7 @@
+﻿0fcca6d HEAD@{0}: pull --rebase origin main (finish): returning to refs/heads/main
+0fcca6d HEAD@{1}: pull --rebase origin main (pick): plus US without auth
+084cafb HEAD@{2}: pull --rebase origin main (start): checkout 084cafb1855d25b042c0bb9cd1864d970f2de5da
+1fcdf4e HEAD@{3}: commit: plus US without auth
+991f733 HEAD@{4}: reset: moving to HEAD~1
+084cafb HEAD@{5}: commit: fix: resolve firebase init sequence and switch to signInWithPopup for web
+991f733 HEAD@{6}: commit (initial): Initial commit before adding login verification

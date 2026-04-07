@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // 若有透過 flutterfire 產生此檔，請取消註解
-import '../state/asset_state.dart';
-import '../pages/home_page.dart';
+import 'firebase_options.dart';
+import 'state/asset_state.dart';
+import 'pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化 Firebase
-  // 若您已經執行過 `flutterfire configure`，建議改為：
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

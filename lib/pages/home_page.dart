@@ -209,6 +209,7 @@ class HomePage extends StatelessWidget {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      interval: 1,
                       reservedSize: 32,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
