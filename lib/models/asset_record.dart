@@ -2,6 +2,7 @@ class AssetRecord {
   String date;
   double sinoStockPv, sinoStockCost, sinoBondPv, sinoBondCost;
   double skisStockPv, skisStockCost, skisBondPv, skisBondCost;
+  double usStockPv, usStockCost;
   double totalCash;
 
   AssetRecord({
@@ -14,6 +15,8 @@ class AssetRecord {
     this.skisStockCost = 0,
     this.skisBondPv = 0,
     this.skisBondCost = 0,
+    this.usStockPv = 0,
+    this.usStockCost = 0,
     this.totalCash = 0,
   });
 
@@ -28,6 +31,8 @@ class AssetRecord {
       skisStockCost: (json['skisStockCost'] ?? 0).toDouble(),
       skisBondPv: (json['skisBondPv'] ?? 0).toDouble(),
       skisBondCost: (json['skisBondCost'] ?? 0).toDouble(),
+      usStockPv: (json['usStockPv'] ?? 0).toDouble(),
+      usStockCost: (json['usStockCost'] ?? 0).toDouble(),
       totalCash: (json['totalCash'] ?? 0).toDouble(),
     );
   }
@@ -43,6 +48,8 @@ class AssetRecord {
       'skisStockCost': skisStockCost,
       'skisBondPv': skisBondPv,
       'skisBondCost': skisBondCost,
+      'usStockPv': usStockPv,
+      'usStockCost': usStockCost,
       'totalCash': totalCash,
     };
   }
@@ -51,6 +58,7 @@ class AssetRecord {
     String? date,
     double? sinoStockPv, double? sinoStockCost, double? sinoBondPv, double? sinoBondCost,
     double? skisStockPv, double? skisStockCost, double? skisBondPv, double? skisBondCost,
+    double? usStockPv, double? usStockCost,
     double? totalCash,
   }) {
     return AssetRecord(
@@ -63,10 +71,12 @@ class AssetRecord {
       skisStockCost: skisStockCost ?? this.skisStockCost,
       skisBondPv: skisBondPv ?? this.skisBondPv,
       skisBondCost: skisBondCost ?? this.skisBondCost,
+      usStockPv: usStockPv ?? this.usStockPv,
+      usStockCost: usStockCost ?? this.usStockCost,
       totalCash: totalCash ?? this.totalCash,
     );
   }
 
-  double get totalPv => sinoStockPv + skisStockPv + sinoBondPv + skisBondPv + totalCash;
-  double get totalCost => sinoStockCost + skisStockCost + sinoBondCost + skisBondCost + totalCash;
+  double get totalPv => sinoStockPv + skisStockPv + usStockPv + sinoBondPv + skisBondPv + totalCash;
+  double get totalCost => sinoStockCost + skisStockCost + usStockCost + sinoBondCost + skisBondCost + totalCash;
 }

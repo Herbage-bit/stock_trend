@@ -22,13 +22,25 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.assetState.records.first.date;
-    _loadRecordForDate(_selectedDate);
+    if (widget.assetState.records.isEmpty) {
+      final today = '${DateTime.now().year}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().day.toString().padLeft(2, '0')}';
+      _selectedDate = today;
+      _editingRecord = AssetRecord(date: today);
+    } else {
+      _selectedDate = widget.assetState.records.first.date;
+      _loadRecordForDate(_selectedDate);
+    }
   }
 
   void _loadRecordForDate(String dateStr) {
+    if (widget.assetState.records.isEmpty) {
+      _editingRecord = AssetRecord(date: dateStr);
+      _hasUnsavedChanges = false;
+      return;
+    }
     final original = widget.assetState.records.firstWhere(
       (r) => r.date == dateStr,
+      orElse: () => AssetRecord(date: dateStr),
     );
     _editingRecord = original.copyWith();
     _hasUnsavedChanges = false;
@@ -258,23 +270,38 @@ class _DashboardPageState extends State<DashboardPage> {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     if (constraints.maxWidth > 800) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      return Column(
                         children: [
-                          Expanded(
-                            child: _buildAccountCard(
-                              '永豐帳戶',
-                              isSino: true,
-                              record: record,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _buildAccountCard(
+                                  '永豐帳戶',
+                                  isSino: true,
+                                  record: record,
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                child: _buildAccountCard(
+                                  '新光帳戶',
+                                  isSino: false,
+                                  record: record,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: _buildAccountCard(
-                              '新光帳戶',
-                              isSino: false,
-                              record: record,
-                            ),
+                          const SizedBox(height: 24),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _buildUsStockAccountCard('美股帳戶', record: record),
+                              ),
+                              const SizedBox(width: 24),
+                              const Expanded(child: SizedBox()),
+                            ],
                           ),
                         ],
                       );
@@ -288,6 +315,8 @@ class _DashboardPageState extends State<DashboardPage> {
                           isSino: false,
                           record: record,
                         ),
+                        const SizedBox(height: 24),
+                        _buildUsStockAccountCard('美股帳戶', record: record),
                       ],
                     );
                   },
@@ -352,6 +381,8 @@ class _DashboardPageState extends State<DashboardPage> {
                           totalStockCost,
                           totalBondPv,
                           totalBondCost,
+                          record.usStockPv,
+                          record.usStockCost,
                           record.totalCash,
                         ),
                         const SizedBox(height: 48),
@@ -433,6 +464,155 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUsStockAccountCard(
+    String title, {
+    required AssetRecord record,
+  }) {
+    return _buildModernCard(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.public,
+                    color: Color(0xFF10B981),
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildUsStockAssetSection(
+              '股票',
+              record: record,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUsStockAssetSection(
+    String label, {
+    required AssetRecord record,
+  }) {
+    final pv = record.usStockPv;
+    final cost = record.usStockCost;
+    final pnl = pv - cost;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.show_chart_rounded,
+              size: 22,
+              color: Color(0xFF64748B),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF475569),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildInputRow('現值', pv, (val) {
+          _updateState(() {
+            record.usStockPv = val;
+          });
+        }),
+        const SizedBox(height: 12),
+        _buildInputRow('付出成本', cost, (val) {
+          _updateState(() {
+            record.usStockCost = val;
+          });
+        }),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            const SizedBox(
+              width: 100,
+              child: Text(
+                '損益',
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: pnl >= 0
+                        ? [
+                            const Color(0xFF10B981).withOpacity(0.12),
+                            const Color(0xFF34D399).withOpacity(0.04),
+                          ]
+                        : [
+                            const Color(0xFFEF4444).withOpacity(0.12),
+                            const Color(0xFFF87171).withOpacity(0.04),
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: pnl >= 0
+                        ? const Color(0xFF10B981).withOpacity(0.3)
+                        : const Color(0xFFEF4444).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  pnl >= 0
+                      ? '+${pnl.toStringAsFixed(2)}'
+                      : pnl.toStringAsFixed(2),
+                  style: TextStyle(
+                    color: pnl >= 0
+                        ? const Color(0xFF059669)
+                        : const Color(0xFFDC2626),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -708,6 +888,8 @@ class _DashboardPageState extends State<DashboardPage> {
     double totalStockCost,
     double totalBondPv,
     double totalBondCost,
+    double totalUsStockPv,
+    double totalUsStockCost,
     double totalCash,
   ) {
     return Table(
@@ -719,6 +901,7 @@ class _DashboardPageState extends State<DashboardPage> {
         1: FlexColumnWidth(1),
         2: FlexColumnWidth(1),
         3: FlexColumnWidth(1),
+        4: FlexColumnWidth(1),
       },
       children: [
         const TableRow(
@@ -741,6 +924,16 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: EdgeInsets.all(16.0),
               child: Text(
                 '債券',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                '美股',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF475569),
@@ -788,6 +981,13 @@ class _DashboardPageState extends State<DashboardPage> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
+                totalUsStockPv.toStringAsFixed(2),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
                 totalCash.toStringAsFixed(2),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -823,6 +1023,13 @@ class _DashboardPageState extends State<DashboardPage> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
+                totalUsStockCost.toStringAsFixed(2),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
                 totalCash.toStringAsFixed(2),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -834,8 +1041,13 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildChart(String title, List<double> values) {
-    final maxVal = values.reduce((a, b) => a > b ? a : b);
-    final upperLimit = maxVal > 0 ? maxVal * 1.2 : 100.0;
+    final total = values.fold(0.0, (sum, item) => sum + item);
+    final percentages = total > 0 
+        ? values.map((v) => (v / total) * 100).toList() 
+        : [0.0, 0.0, 0.0];
+
+    final maxVal = percentages.reduce((a, b) => a > b ? a : b);
+    final upperLimit = maxVal > 0 ? ((maxVal / 10).ceil() * 10).toDouble() + 10 : 100.0;
 
     return Column(
       children: [
@@ -853,14 +1065,14 @@ class _DashboardPageState extends State<DashboardPage> {
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
-              maxY: upperLimit,
+              maxY: upperLimit > 100 ? 100 : upperLimit,
               barTouchData: BarTouchData(
                 enabled: true,
                 touchTooltipData: BarTouchTooltipData(
                   getTooltipColor: (_) => const Color(0xFF1E293B),
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     return BarTooltipItem(
-                      rod.toY.round().toString(),
+                      '${rod.toY.toStringAsFixed(1)}%',
                       const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -909,9 +1121,9 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               borderData: FlBorderData(show: false),
               barGroups: [
-                _buildBarGroup(0, values[0], const Color(0xFF3B82F6)),
-                _buildBarGroup(1, values[1], const Color(0xFFA855F7)),
-                _buildBarGroup(2, values[2], const Color(0xFFF59E0B)),
+                _buildBarGroup(0, percentages[0], const Color(0xFF3B82F6)),
+                _buildBarGroup(1, percentages[1], const Color(0xFFA855F7)),
+                _buildBarGroup(2, percentages[2], const Color(0xFFF59E0B)),
               ],
             ),
           ),
