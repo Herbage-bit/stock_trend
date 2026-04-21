@@ -115,7 +115,16 @@ class HomePage extends StatelessWidget {
         child: Text('暫無資料', style: TextStyle(color: Colors.black54)),
       );
 
-    final chronRecords = records.reversed.toList();
+    // 只保留有實際數值的紀錄（totalPv > 0）
+    final chronRecords = records.reversed
+        .where((r) => r.totalPv > 0)
+        .toList();
+
+    if (chronRecords.isEmpty)
+      return const Center(
+        child: Text('暫無資料', style: TextStyle(color: Colors.black54)),
+      );
+
     List<FlSpot> spotsTotal = [];
     List<FlSpot> spotsStock = [];
     List<FlSpot> spotsBond = [];
