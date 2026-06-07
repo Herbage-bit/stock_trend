@@ -15,20 +15,24 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  late String _selectedDate;
+  String? _selectedDate;
   late AssetRecord _editingRecord;
   bool _hasUnsavedChanges = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.assetState.records.isEmpty) {
-      final today = '${DateTime.now().year}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().day.toString().padLeft(2, '0')}';
+    final today = '${DateTime.now().year}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().day.toString().padLeft(2, '0')}';
+    // 只有當今天已有儲存記錄時，才預設選今天；否則不選任何日期
+    if (widget.assetState.records.any((r) => r.date == today)) {
       _selectedDate = today;
-      _editingRecord = AssetRecord(date: today);
-    } else {
+      _loadRecordForDate(today);
+    } else if (widget.assetState.records.isNotEmpty) {
       _selectedDate = widget.assetState.records.first.date;
-      _loadRecordForDate(_selectedDate);
+      _loadRecordForDate(_selectedDate!);
+    } else {
+      _selectedDate = null;
+      _editingRecord = AssetRecord(date: today);
     }
   }
 
@@ -56,9 +60,9 @@ class _DashboardPageState extends State<DashboardPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF6366F1), // Header background
-              onPrimary: Colors.white, // Header text
-              onSurface: Color(0xFF1E293B), // Body text
+              primary: Color(0xFF6366F1),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E293B),
             ),
           ),
           child: child!,
@@ -68,7 +72,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (picked != null) {
       final newDateStr =
           '${picked.year}/${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}';
-      widget.assetState.addDate(newDateStr);
+      // 不在這裡 addDate，只切換編輯狀態；儲存時才真正寫入
       setState(() {
         _selectedDate = newDateStr;
         _loadRecordForDate(newDateStr);
@@ -77,9 +81,11 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _onSave() {
+    // saveRecord 內部會做 Firestore set，Firestore snapshot 回來後日期才出現在選單
     widget.assetState.saveRecord(_editingRecord);
     setState(() {
       _hasUnsavedChanges = false;
+      _selectedDate = _editingRecord.date;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -161,9 +167,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 },
               ),
               title: const Text(
-                'Assets tracking Dashboard',
+                '資產追蹤',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 18,
                   color: Color(0xFF1E293B),
                 ),
               ),
@@ -172,8 +179,8 @@ class _DashboardPageState extends State<DashboardPage> {
               actions: [
                 Center(
                   child: Container(
-                    height: 40,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -189,13 +196,20 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedDate,
+                        hint: const Text(
+                          '選擇日期',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
                         icon: const Icon(
                           Icons.calendar_today_rounded,
-                          size: 18,
+                          size: 16,
                           color: Color(0xFF6366F1),
                         ),
                         style: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF334155),
                         ),
@@ -230,9 +244,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Padding(
-                  padding: const EdgeInsets.only(right: 24.0),
+                  padding: const EdgeInsets.only(right: 16.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFF6366F1),
@@ -344,10 +358,16 @@ class _DashboardPageState extends State<DashboardPage> {
                 _buildModernCard(
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
-                    child: _buildInputRow(
-                      '總現金數額',
-                      record.totalCash,
-                      (val) => _updateState(() => record.totalCash = val),
+                    child: Column(
+                      children: [
+                        _buildInputRow(
+                          '總現金數額',
+                          record.totalCash,
+                          (val) => _updateState(() => record.totalCash = val),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildInvestableRow(record.totalCash),
+                      ],
                     ),
                   ),
                 ),
@@ -808,6 +828,92 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ],
     );
+  }
+
+  Widget _buildInvestableRow(double totalCash) {
+    const emergencyFund = 300000.0;
+    final investable = totalCash - emergencyFund;
+    final isPositive = investable >= 0;
+    final color = isPositive ? const Color(0xFF059669) : const Color(0xFFDC2626);
+    final bgColor = isPositive
+        ? const Color(0xFF10B981)
+        : const Color(0xFFEF4444);
+
+    return Row(
+      children: [
+        const SizedBox(
+          width: 100,
+          child: Text(
+            '還可投入',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF334155),
+              fontSize: 15,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  bgColor.withAlpha(30),
+                  bgColor.withAlpha(10),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: bgColor.withAlpha(77)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      isPositive
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
+                      size: 18,
+                      color: color,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isPositive
+                          ? '+${_formatCurrency(investable)}'
+                          : _formatCurrency(investable),
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '現金 − 緊急預備金 30萬',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: color.withAlpha(160),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatCurrency(double value) {
+    final abs = value.abs();
+    if (abs >= 10000) {
+      return '${value < 0 ? '-' : ''}${(abs / 10000).toStringAsFixed(2)}萬';
+    }
+    return value.toStringAsFixed(0);
   }
 
   Widget _buildInputRow(

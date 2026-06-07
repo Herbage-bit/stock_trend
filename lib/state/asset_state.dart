@@ -11,20 +11,13 @@ class AssetState extends ChangeNotifier {
   }
 
   void _init() {
-    final today = '${DateTime.now().year}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().day.toString().padLeft(2, '0')}';
-    
     _firestore.collection('assets').snapshots().listen((snapshot) {
       final allRecords = snapshot.docs.map((doc) => AssetRecord.fromJson(doc.data())).toList();
       // dedup：同一 date 只保留一筆
       final seen = <String>{};
       records = allRecords.where((r) => seen.add(r.date)).toList();
-
-      if (!records.any((r) => r.date == today)) {
-        addDate(today);
-      } else {
-        records.sort((a, b) => b.date.compareTo(a.date));
-        notifyListeners();
-      }
+      records.sort((a, b) => b.date.compareTo(a.date));
+      notifyListeners();
     }, onError: (error) {
       debugPrint("Error fetching assets: $error");
     });
